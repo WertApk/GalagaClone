@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="GalagaClone/GalagaClone.vcxproj" />
+  <Project Path="GalagaClone/GalagaClone.vcxproj" Id="67d59c2f-4bda-46db-b3a1-19023fffa513" />
 </Solution>
