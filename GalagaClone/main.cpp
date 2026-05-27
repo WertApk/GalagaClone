@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp> // SFML grafik kütüphanesi
 #include <vector>            // Birden fazla düşmanı tutmak için vector kullanacağız
+#include <string>            // String işlemleri için
 
 int main()
 {
@@ -26,19 +27,45 @@ int main()
 
 
     // =========================
-    // MERMİ OLUŞTURMA
+    // MERMİLER
     // =========================
 
-    // Mermi için küçük dikdörtgen
-    sf::RectangleShape bullet(sf::Vector2f(5.f, 20.f));
+    // Birden fazla mermi saklamak için vector
+    std::vector<sf::RectangleShape> bullets;
 
-    // Merminin rengi kırmızı
-    bullet.setFillColor(sf::Color::Red);
+    bool spacePressed = false;
 
-    // Mermi aktif mi kontrolü
-    bool bulletActive = false;
+    int score = 0;
 
+    // =========================
+    // FONT VE SKOR YAZISI
+    // =========================
 
+// Font
+    sf::Font font;
+
+    if (!font.loadFromFile("C:/Windows/Fonts/arial.ttf"))
+    {
+        return -1;
+    }
+
+    // Yazı
+    sf::Text scoreText;
+
+    // Font ayarla
+    scoreText.setFont(font);
+
+    // Başlangıç yazısı
+    scoreText.setString("Score: 0");
+
+    // Yazı boyutu
+    scoreText.setCharacterSize(24);
+
+    // Yazı rengi
+    scoreText.setFillColor(sf::Color::White);
+
+    // Yazı pozisyonu
+    scoreText.setPosition(620.f, 15.f);
 
     // =========================
     // DÜŞMANLAR
@@ -108,17 +135,34 @@ int main()
         // ATEŞ ETME
         // =========================
 
-        // Space'e basılırsa ve ekranda mermi yoksa
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && !bulletActive)
+        // Space'e şu an basılıyor mu?
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
         {
-            // Mermiyi oyuncunun üstüne yerleştir
-            bullet.setPosition(
-                player.getPosition().x + 37.f,
-                player.getPosition().y
-            );
+            // Space'e ilk kez basıldıysa
+            if (!spacePressed)
+            {
+                // Yeni mermi oluştur
+                sf::RectangleShape bullet(sf::Vector2f(5.f, 20.f));
 
-            // Mermiyi aktif yap
-            bulletActive = true;
+                bullet.setFillColor(sf::Color::Red);
+
+                // Mermiyi oyuncunun üstüne yerleştir
+                bullet.setPosition(
+                    player.getPosition().x + 37.f,
+                    player.getPosition().y
+                );
+
+                // Mermiyi vector içine ekle
+                bullets.push_back(bullet);
+
+                // Space basılı olarak işaretlenir
+                spacePressed = true;
+            }
+        }
+        else
+        {
+            // Space bırakıldıysa tekrar ateş edilebilir
+            spacePressed = false;
         }
 
 
@@ -127,44 +171,45 @@ int main()
         // MERMİ HAREKETİ
         // =========================
 
-        if (bulletActive)
+        // Tüm mermileri hareket ettir
+        for (int i = 0; i < bullets.size(); i++)
         {
-            // Mermiyi yukarı hareket ettir
-            bullet.move(0.f, -0.7f);
+            bullets[i].move(0.f, -0.7f);
 
-            // Eğer ekranın dışına çıktıysa
-            if (bullet.getPosition().y < 0)
+            // Ekrandan çıkan mermiyi sil
+            if (bullets[i].getPosition().y < 0)
             {
-                // Mermiyi kapat
-                bulletActive = false;
+                bullets.erase(bullets.begin() + i);
             }
         }
+
 
         // =========================
         // ÇARPIŞMA KONTROLÜ
         // =========================
 
-        // Eğer mermi aktifse düşmanlara çarpıp çarpmadığını kontrol et
-        if (bulletActive)
+        for (int i = 0; i < bullets.size(); i++)
         {
-            for (int i = 0; i < enemies.size(); i++)
+            for (int j = 0; j < enemies.size(); j++)
             {
-                // Merminin sınırları ile düşmanın sınırları kesişiyor mu?
-                if (bullet.getGlobalBounds().intersects(enemies[i].getGlobalBounds()))
+                // Mermi düşmana değdi mi?
+                if (bullets[i].getGlobalBounds().intersects(enemies[j].getGlobalBounds()))
                 {
-                    // Çarpılan düşmanı listeden sil
-                    enemies.erase(enemies.begin() + i);
+                    // Düşmanı sil
+                    enemies.erase(enemies.begin() + j);
 
-                    // Mermiyi de pasif yap
-                    bulletActive = false;
+                    // Skoru artır
+                    score += 10;
 
-                    // Düşman silindiği için döngüden çık
+                    // Mermiyi sil
+                    bullets.erase(bullets.begin() + i);
+
                     break;
                 }
             }
         }
 
-        // =========================
+// =========================
 // DÜŞMAN HAREKETİ
 // =========================
 
@@ -200,6 +245,11 @@ int main()
             }
         }
 
+        // Skor yazısını güncelle
+        scoreText.setString(
+            "Score: " + std::to_string(score)
+        );
+
         // =========================
         // EKRANI ÇİZME
         // =========================
@@ -209,14 +259,37 @@ int main()
 
 
 
+        // =========================
+        // SKOR KUTUSU
+        // =========================
+
+        // Skor için kutu
+        sf::RectangleShape scoreBox(sf::Vector2f(160.f, 50.f));
+
+        scoreBox.setFillColor(sf::Color(50, 50, 50));
+
+        scoreBox.setPosition(610.f, 10.f);
+
+        // Kutuyu çiz
+        window.draw(scoreBox);
+
+        // Yazıyı çiz
+        window.draw(scoreText);
+
+
+
+
         // Oyuncuyu çiz
         window.draw(player);
 
 
 
-        // Mermi aktifse çiz
-        if (bulletActive)
-            window.draw(bullet);
+        
+        // Tüm mermileri çiz
+        for (int i = 0; i < bullets.size(); i++)
+        {
+            window.draw(bullets[i]);
+        }
 
 
 
@@ -227,6 +300,11 @@ int main()
         }
 
 
+
+        // Skoru pencere başlığında göster
+        window.setTitle(
+            "Galaga Clone - Score: " + std::to_string(score)
+        );
 
         // Çizilen her şeyi ekrana göster
         window.display();
