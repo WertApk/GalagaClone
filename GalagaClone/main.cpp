@@ -7,6 +7,8 @@ int main()
     sf::RenderWindow window(sf::VideoMode(800, 600), "Galaga Clone");
 
 
+    window.setFramerateLimit(1500);
+
 
     // =========================
     // OYUNCU OLUŞTURMA
@@ -44,6 +46,12 @@ int main()
 
     // Birden fazla düşmanı saklamak için vector kullanıyoruz
     std::vector<sf::RectangleShape> enemies;
+
+    // Düşmanların hareket yönü
+    float enemySpeed = 0.2f;
+
+    // Sağ mı gidiyorlar?
+    bool moveRight = true;
 
     // 5 tane düşman oluşturacağız
     for (int i = 0; i < 5; i++)
@@ -156,6 +164,41 @@ int main()
             }
         }
 
+        // =========================
+// DÜŞMAN HAREKETİ
+// =========================
+
+// Tüm düşmanları hareket ettir
+        for (int i = 0; i < enemies.size(); i++)
+        {
+            // Eğer sağa gidiyorlarsa
+            if (moveRight)
+            {
+                enemies[i].move(enemySpeed, 0.f);
+            }
+            else
+            {
+                enemies[i].move(-enemySpeed, 0.f);
+            }
+        }
+
+
+
+        // Kenara değdiler mi kontrolü
+        for (int i = 0; i < enemies.size(); i++)
+        {
+            // Sağ kenar
+            if (enemies[i].getPosition().x > 750)
+            {
+                moveRight = false;
+            }
+
+            // Sol kenar
+            if (enemies[i].getPosition().x < 0)
+            {
+                moveRight = true;
+            }
+        }
 
         // =========================
         // EKRANI ÇİZME
