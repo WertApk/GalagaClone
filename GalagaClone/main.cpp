@@ -132,6 +132,29 @@ int main()
             }
         }
 
+        // =========================
+        // ÇARPIŞMA KONTROLÜ
+        // =========================
+
+        // Eğer mermi aktifse düşmanlara çarpıp çarpmadığını kontrol et
+        if (bulletActive)
+        {
+            for (int i = 0; i < enemies.size(); i++)
+            {
+                // Merminin sınırları ile düşmanın sınırları kesişiyor mu?
+                if (bullet.getGlobalBounds().intersects(enemies[i].getGlobalBounds()))
+                {
+                    // Çarpılan düşmanı listeden sil
+                    enemies.erase(enemies.begin() + i);
+
+                    // Mermiyi de pasif yap
+                    bulletActive = false;
+
+                    // Düşman silindiği için döngüden çık
+                    break;
+                }
+            }
+        }
 
 
         // =========================
