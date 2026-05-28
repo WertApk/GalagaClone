@@ -1,14 +1,14 @@
 #include <SFML/Graphics.hpp> // SFML grafik kütüphanesi
 #include <vector>            // Birden fazla düşmanı tutmak için vector kullanacağız
 #include <string>            // String işlemleri için
-
+#include <cmath>             // Sinüs fonksiyonunu kullanmak için
 int main()
 {
     // Oyun penceresi oluşturuyoruz
     sf::RenderWindow window(sf::VideoMode(800, 600), "Galaga Clone");
 
 
-    window.setFramerateLimit(1500);
+    window.setFramerateLimit(1300);
 
 
     // =========================
@@ -16,7 +16,7 @@ int main()
     // =========================
 
     // Oyuncu için dikdörtgen şekil oluşturuyoruz
-    sf::RectangleShape player(sf::Vector2f(80.f, 20.f));
+    sf::RectangleShape player(sf::Vector2f(65.f, 15.f));
 
     // Oyuncunun rengini yeşil yapıyoruz
     player.setFillColor(sf::Color::Green);
@@ -41,7 +41,7 @@ int main()
     // FONT VE SKOR YAZISI
     // =========================
 
-// Font
+    // Font
     sf::Font font;
 
     if (!font.loadFromFile("C:/Windows/Fonts/arial.ttf"))
@@ -74,17 +74,25 @@ int main()
     // Birden fazla düşmanı saklamak için vector kullanıyoruz
     std::vector<sf::RectangleShape> enemies;
 
+    // Düşmanların başlangıç Y konumlarını saklıyoruz
+    // Çünkü sinüs hareketinde düşmanları bu başlangıç yüksekliğinin etrafında oynatacağız
+    std::vector<float> enemyBaseY;
+
     // Düşmanların hareket yönü
     float enemySpeed = 0.2f;
 
     // Sağ mı gidiyorlar?
     bool moveRight = true;
 
+    // Dalga hareketi için zaman değişkeni
+    // Bu değer oyun çalıştıkça artacak ve sinüs hareketini oluşturacak
+    float waveTime = 0.f;
+
     // 5 tane düşman oluşturacağız
     for (int i = 0; i < 5; i++)
     {
         // Her düşman için dikdörtgen oluştur
-        sf::RectangleShape enemy(sf::Vector2f(50.f, 30.f));
+        sf::RectangleShape enemy(sf::Vector2f(40.f, 22.f));
 
         // Düşman rengi mavi
         enemy.setFillColor(sf::Color::Blue);
@@ -95,6 +103,10 @@ int main()
 
         // Düşmanı vector içine ekle
         enemies.push_back(enemy);
+
+        // Bu düşmanın başlangıç Y konumunu kaydediyoruz
+        // Şu an tüm düşmanlar 80.f yüksekliğinde başladığı için 80.f ekliyoruz
+        enemyBaseY.push_back(80.f);
     }
 
 
@@ -186,7 +198,7 @@ int main()
         // Tüm mermileri hareket ettir
         for (int i = 0; i < bullets.size(); i++)
         {
-            bullets[i].move(0.f, -0.7f);
+            bullets[i].move(0.f, -0.4f);
 
             // Ekrandan çıkan mermiyi sil
             if (bullets[i].getPosition().y < 0)
@@ -221,22 +233,40 @@ int main()
             }
         }
 
-// =========================
-// DÜŞMAN HAREKETİ
-// =========================
+        // Dalga hareketi için zamanı artırıyoruz
+        // Bu değer arttıkça std::sin() farklı sonuçlar üretir
+        waveTime += 0.005f;
 
-// Tüm düşmanları hareket ettir
+        // =========================
+        // DÜŞMAN HAREKETİ
+        // =========================
+
+        // Tüm düşmanları hareket ettir
         for (int i = 0; i < enemies.size(); i++)
         {
-            // Eğer sağa gidiyorlarsa
+            // Eğer düşmanlar sağa gidiyorsa X ekseninde sağa hareket ettiriyoruz
             if (moveRight)
             {
                 enemies[i].move(enemySpeed, 0.f);
             }
             else
             {
+                // Eğer sağa gitmiyorlarsa sola hareket ettiriyoruz
                 enemies[i].move(-enemySpeed, 0.f);
             }
+
+            // Sinüs fonksiyonu -1 ile +1 arasında değer üretir
+            // Bu değeri 20 ile çarparak düşmanı 20 piksel yukarı-aşağı oynatıyoruz
+            // waveTime değiştikçe hareket sürekli devam eder
+            // + i ekleyerek her düşmanın dalga hareketini biraz farklı başlatıyoruz
+            float waveOffset = std::sin(waveTime + i) * 25.f;
+
+            // Düşmanın X konumunu koruyoruz
+            // Y konumunu ise başlangıç Y değeri + sinüs dalgası yapıyoruz
+            enemies[i].setPosition(
+                enemies[i].getPosition().x,
+                enemyBaseY[i] + waveOffset
+            );
         }
 
 
@@ -276,7 +306,7 @@ int main()
         // =========================
 
         // Skor için kutu
-        sf::RectangleShape scoreBox(sf::Vector2f(160.f, 50.f));
+        sf::RectangleShape scoreBox(sf::Vector2f(160.f, 40.f));
 
         scoreBox.setFillColor(sf::Color(50, 50, 50));
 
