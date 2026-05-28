@@ -123,11 +123,23 @@ int main()
 
         // A tuşu basılıysa sola git
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-            player.move(-0.5f, 0.f);
+        {
+            // Oyuncu ekranın solundan çıkmasın
+            if (player.getPosition().x > 0)
+            {
+                player.move(-0.5f, 0.f);
+            }
+        }
 
         // D tuşu basılıysa sağa git
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-            player.move(0.5f, 0.f);
+        {
+            // Oyuncu ekranın sağından çıkmasın
+            if (player.getPosition().x < 720)
+            {
+                player.move(0.5f, 0.f);
+            }
+        }
 
 
 
