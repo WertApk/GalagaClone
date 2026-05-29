@@ -60,6 +60,28 @@ int main()
     // Kaçıncı seviyede olduğumuzu tutar
     int level = 1;
 
+    // Oyunun hangi ekranda olduğunu tutuyoruz
+    enum GameState
+    {
+        MENU,
+        KEYS,
+        GAMEPLAY_INFO,
+        PLAYING
+    };
+
+    // Oyun ilk açıldığında menüden başlayacak
+    GameState currentState = MENU;
+
+    // Menüde seçili olan satır
+    int selectedMenuItem = 0;
+
+    // Menüde tuş basılı tutulunca çok hızlı geçiş olmasın diye kontrol değişkenleri
+    bool upPressed = false;
+    bool downPressed = false;
+
+    // Enter tuşu basılı tutulunca seçim tekrar tekrar çalışmasın diye
+    bool enterPressed = false;
+
     // Oyuncu vurulduktan sonra geçen süreyi sayacağız
     int gameOverTimer = 0;
 
@@ -118,6 +140,69 @@ int main()
     levelCompleteText.setFillColor(sf::Color::Green);
     levelCompleteText.setPosition(180.f, 280.f);
 
+    // =========================
+    // MENÜ YAZILARI
+    // =========================
+
+    sf::Text titleText;
+    titleText.setFont(font);
+    titleText.setString("GALAGA CLONE");
+    titleText.setCharacterSize(50);
+    titleText.setFillColor(sf::Color::White);
+    titleText.setPosition(220.f, 100.f);
+
+    sf::Text playText;
+    playText.setFont(font);
+    playText.setString("PLAY");
+    playText.setCharacterSize(35);
+    playText.setPosition(330.f, 220.f);
+
+    sf::Text keysText;
+    keysText.setFont(font);
+    keysText.setString("KEYS");
+    keysText.setCharacterSize(35);
+    keysText.setPosition(330.f, 280.f);
+
+    sf::Text gameplayText;
+    gameplayText.setFont(font);
+    gameplayText.setString("GAMEPLAY");
+    gameplayText.setCharacterSize(35);
+    gameplayText.setPosition(330.f, 340.f);
+
+    sf::Text quitText;
+    quitText.setFont(font);
+    quitText.setString("QUIT");
+    quitText.setCharacterSize(35);
+    quitText.setPosition(330.f, 400.f);
+
+    // =========================
+    // KEYS EKRANI YAZILARI
+    // =========================
+
+    sf::Text keysInfoText;
+    keysInfoText.setFont(font);
+    keysInfoText.setString("KEYS\n\nA  - Move Left\nD  - Move Right\nSPACE - Shoot\n\nPress ESC to return menu");
+    keysInfoText.setCharacterSize(28);
+    keysInfoText.setFillColor(sf::Color::White);
+    keysInfoText.setPosition(180.f, 140.f);
+
+    // =========================
+    // GAMEPLAY EKRANI YAZILARI
+    // =========================
+
+    sf::Text gameplayInfoText;
+    gameplayInfoText.setFont(font);
+    gameplayInfoText.setString(
+        "GAMEPLAY\n\n"
+        "Destroy all enemies to complete the level.\n"
+        "Enemy bullets reduce your lives.\n"
+        "If your lives reach 0, the game is over.\n"
+        "Each destroyed enemy gives 10 points.\n\n"
+        "Press ESC to return menu"
+    );
+    gameplayInfoText.setCharacterSize(26);
+    gameplayInfoText.setFillColor(sf::Color::White);
+    gameplayInfoText.setPosition(90.f, 120.f);
 
     // =========================
     // DÜŞMANLAR
@@ -182,7 +267,132 @@ int main()
                 window.close();
         }
 
+        // KEYS veya GAMEPLAY ekranındayken ESC ile menüye dön
+        if (currentState == KEYS || currentState == GAMEPLAY_INFO)
+        {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+            {
+                currentState = MENU;
+            }
+        }
 
+        // =========================
+        // MENÜ KONTROLÜ
+        // =========================
+
+        if (currentState == MENU)
+        {
+            // Yukarı ok tuşuna basıldıysa
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+            {
+                if (!upPressed)
+                {
+                    selectedMenuItem--;
+
+                    // En üstten yukarı çıkarsa en alta geçsin
+                    if (selectedMenuItem < 0)
+                    {
+                        selectedMenuItem = 3;
+                    }
+
+                    upPressed = true;
+                }
+            }
+            else
+            {
+                upPressed = false;
+            }
+
+            // Aşağı ok tuşuna basıldıysa
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+            {
+                if (!downPressed)
+                {
+                    selectedMenuItem++;
+
+                    // En alttan aşağı inerse en üste geçsin
+                    if (selectedMenuItem > 3)
+                    {
+                        selectedMenuItem = 0;
+                    }
+
+                    downPressed = true;
+                }
+            }
+            else
+            {
+                downPressed = false;
+            }
+            // Enter tuşuna basıldıysa seçili menü elemanını çalıştır
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
+            {
+                if (!enterPressed)
+                {
+                    // PLAY seçiliyse oyunu başlat
+                    if (selectedMenuItem == 0)
+                    {
+                        currentState = PLAYING;
+                    }
+
+                    // KEYS seçiliyse tuşlar ekranına geç
+                    if (selectedMenuItem == 1)
+                    {
+                        currentState = KEYS;
+                    }
+
+                    // GAMEPLAY seçiliyse oyun açıklaması ekranına geç
+                    if (selectedMenuItem == 2)
+                    {
+                        currentState = GAMEPLAY_INFO;
+                    }
+
+                    // QUIT seçiliyse pencereyi kapat
+                    if (selectedMenuItem == 3)
+                    {
+                        window.close();
+                    }
+
+                    enterPressed = true;
+                }
+            }
+            else
+            {
+                enterPressed = false;
+            }
+        }
+
+        // Eğer oyun PLAYING durumunda değilse oyun kodlarını çalıştırma
+        if (currentState != PLAYING)
+        {
+            window.clear();
+
+            if (currentState == MENU)
+            {
+                playText.setFillColor(selectedMenuItem == 0 ? sf::Color::Green : sf::Color::White);
+                keysText.setFillColor(selectedMenuItem == 1 ? sf::Color::Green : sf::Color::White);
+                gameplayText.setFillColor(selectedMenuItem == 2 ? sf::Color::Green : sf::Color::White);
+                quitText.setFillColor(selectedMenuItem == 3 ? sf::Color::Green : sf::Color::White);
+
+                window.draw(titleText);
+                window.draw(playText);
+                window.draw(keysText);
+                window.draw(gameplayText);
+                window.draw(quitText);
+            }
+
+            if (currentState == KEYS)
+            {
+                window.draw(keysInfoText);
+            }
+
+            if (currentState == GAMEPLAY_INFO)
+            {
+                window.draw(gameplayInfoText);
+            }
+
+            window.display();
+            continue;
+        }
 
         // =========================
         // OYUNCU HAREKETİ
@@ -554,6 +764,8 @@ int main()
 
         // Ekranı siyaha temizle
         window.clear();
+
+        
 
         // =========================
         // CAN KUTUSU
