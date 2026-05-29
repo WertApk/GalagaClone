@@ -48,6 +48,9 @@ int main()
 
     int score = 0;
 
+    // Oyuncunun can sayısı
+    int lives = 3;
+
     // Oyuncu vuruldu mu kontrolü
     bool playerGotShot = false;
     
@@ -89,6 +92,15 @@ int main()
 
     // Yazı pozisyonu
     scoreText.setPosition(620.f, 15.f);
+
+    // Can yazısı
+    sf::Text livesText;
+    livesText.setFont(font);
+    livesText.setString("Lives: 3");
+    livesText.setCharacterSize(24);
+    livesText.setFillColor(sf::Color::White);
+    livesText.setPosition(20.f, 15.f);
+
 
     // Oyuncu vurulunca ekranda gösterilecek yazı
     sf::Text hitText;
@@ -276,12 +288,15 @@ int main()
             // Düşman mermisi oyuncuya değdi mi?
             if (enemyBullets[i].getGlobalBounds().intersects(player.getGlobalBounds()))
             {
-                // Eğer oyuncu ilk kez vurulduysa
-                if (!playerGotShot)
+                // Oyuncunun canını 1 azaltıyoruz
+                lives--;
+
+                // Eğer can kalmadıysa oyun bitiyor
+                if (lives <= 0 && !playerGotShot)
                 {
                     playerGotShot = true;
 
-                    // Sayaç sadece ilk vurulmada sıfırlanır
+                    // Game over sayacı başlıyor
                     gameOverTimer = 0;
                 }
 
@@ -517,13 +532,7 @@ int main()
             gameOverTimer++;
         }
 
-        // Eğer oyuncu vurulduysa süre saymaya başla
-        if (playerGotShot)
-        {
-            gameOverTimer++;
-        }
-
-        // Yaklaşık 3 saniye sonra oyun döngüsünden çık
+        // Yaklaşık 3 saniye sonra oyunu dondur
         if (playerGotShot && gameOverTimer > 3900)
         {
 			continue;// Eğer break olursa oyun bitince pencere kapanır, ama böyle oyun donup pencere açık kalır
@@ -534,12 +543,9 @@ int main()
             "Score: " + std::to_string(score)
         );
 
-        // Yaklaşık 3 saniye sonra oyunu durdur
-		// Oyun 1300 fps e limitli old için 3900 sayısı yaklaşık 3 saniyeye denk gelir
-        if (playerGotShot && gameOverTimer > 3900)
-        {
-            break;
-        }
+        livesText.setString(
+            "Lives: " + std::to_string(lives)
+        );
 
 
         // =========================
@@ -549,6 +555,18 @@ int main()
         // Ekranı siyaha temizle
         window.clear();
 
+        // =========================
+        // CAN KUTUSU
+        // =========================
+
+        // Can sayısı için kutu
+        sf::RectangleShape livesBox(sf::Vector2f(160.f, 40.f));
+
+        // Kutu rengi
+        livesBox.setFillColor(sf::Color(50, 50, 50));
+
+        // Sol üst köşeye yerleştiriyoruz
+        livesBox.setPosition(10.f, 10.f);
 
 
         // =========================
@@ -561,12 +579,20 @@ int main()
         scoreBox.setFillColor(sf::Color(50, 50, 50));
 
         scoreBox.setPosition(610.f, 10.f);
+         
+        // Can kutusunu çiz
+        window.draw(livesBox);
+
+        // Can yazısını çiz
+        window.draw(livesText);
 
         // Kutuyu çiz
         window.draw(scoreBox);
 
         // Yazıyı çiz
         window.draw(scoreText);
+
+        
 
         // Eğer oyuncu vurulduysa uyarı yazısını çiz
         if (playerGotShot)
