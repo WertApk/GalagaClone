@@ -66,7 +66,8 @@ int main()
         MENU,
         KEYS,
         GAMEPLAY_INFO,
-        PLAYING
+        PLAYING,
+        GAME_OVER
     };
 
     // Oyun ilk açıldığında menüden başlayacak
@@ -81,6 +82,9 @@ int main()
 
     // Enter tuşu basılı tutulunca seçim tekrar tekrar çalışmasın diye
     bool enterPressed = false;
+    
+    // R tuşu basılı tutulunca tekrar tekrar çalışmasın
+    bool rPressed = false;
 
     // Oyuncu vurulduktan sonra geçen süreyi sayacağız
     int gameOverTimer = 0;
@@ -205,6 +209,21 @@ int main()
     gameplayInfoText.setPosition(90.f, 120.f);
 
     // =========================
+    // GAME OVER EKRANI
+    // =========================
+
+    sf::Text gameOverText;
+    gameOverText.setFont(font);
+    gameOverText.setString(
+        "GAME OVER\n\n"
+        "Press R to Retry\n"
+        "Press ESC for Menu"
+    );
+    gameOverText.setCharacterSize(35);
+    gameOverText.setFillColor(sf::Color::White);
+    gameOverText.setPosition(220.f, 200.f);
+
+    // =========================
     // DÜŞMANLAR
     // =========================
 
@@ -275,6 +294,71 @@ int main()
                 currentState = MENU;
             }
         }
+
+        // GAME OVER ekranında R ile yeniden başlat
+        if (currentState == GAME_OVER)
+        {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::R))
+            {
+                if (!rPressed)
+                {
+                    // Oyun değişkenlerini sıfırla
+                    score = 0;
+                    lives = 3;
+                    level = 1;
+
+                    playerGotShot = false;
+                    levelComplete = false;
+
+                    gameOverTimer = 0;
+                    levelCompleteTimer = 0;
+
+                    enemyShootTimer = 0;
+
+                    bullets.clear();
+                    enemyBullets.clear();
+
+                    enemies.clear();
+                    enemyBaseY.clear();
+
+                    // Level 1 düşmanlarını yeniden oluştur
+                    for (int i = 0; i < 5; i++)
+                    {
+                        sf::RectangleShape enemy(sf::Vector2f(40.f, 22.f));
+
+                        enemy.setFillColor(sf::Color::Blue);
+
+                        enemy.setPosition(120.f + i * 120.f, 80.f);
+
+                        enemies.push_back(enemy);
+
+                        enemyBaseY.push_back(80.f);
+                    }
+
+                    // Oyuncuyu başlangıç konumuna taşı
+                    player.setPosition(360.f, 520.f);
+
+                    // Oyuna geri dön
+                    currentState = PLAYING;
+
+                    rPressed = true;
+                }
+            }
+            else
+            {
+                rPressed = false;
+            }
+        }
+
+        // GAME OVER ekranında ESC ile menüye dön
+        if (currentState == GAME_OVER)
+        {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+            {
+                currentState = MENU;
+            }
+        }
+
 
         // =========================
         // MENÜ KONTROLÜ
@@ -388,6 +472,11 @@ int main()
             if (currentState == GAMEPLAY_INFO)
             {
                 window.draw(gameplayInfoText);
+            }
+
+            if (currentState == GAME_OVER)
+            {
+                window.draw(gameOverText);
             }
 
             window.display();
@@ -742,10 +831,10 @@ int main()
             gameOverTimer++;
         }
 
-        // Yaklaşık 3 saniye sonra oyunu dondur
+        // Yaklaşık 3 saniye sonra Game Over ekranına geç
         if (playerGotShot && gameOverTimer > 3900)
         {
-			continue;// Eğer break olursa oyun bitince pencere kapanır, ama böyle oyun donup pencere açık kalır
+            currentState = GAME_OVER;
         }
 
         // Skor yazısını güncelle
