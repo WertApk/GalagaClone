@@ -2,13 +2,21 @@
 #include <vector>            // Birden fazla düşmanı tutmak için vector kullanacağız
 #include <string>            // String işlemleri için
 #include <cmath>             // Sinüs fonksiyonunu kullanmak için
+#include <cstdlib>           // Rastgele sayı üretmek için
+#include <ctime>             // Rastgeleliği zamana bağlamak için
+
+
+
 int main()
 {
+    // Rastgele sayı sistemini başlatıyoruz
+    srand(time(0));
+    
     // Oyun penceresi oluşturuyoruz
     sf::RenderWindow window(sf::VideoMode(800, 600), "Galaga Clone");
 
 
-    window.setFramerateLimit(1300);
+    window.setFramerateLimit(800);
 
 
     // =========================
@@ -33,9 +41,24 @@ int main()
     // Birden fazla mermi saklamak için vector
     std::vector<sf::RectangleShape> bullets;
 
+    // Düşmanların attığı mermileri tutar
+    std::vector<sf::RectangleShape> enemyBullets;
+
     bool spacePressed = false;
 
     int score = 0;
+
+    // Oyuncu vuruldu mu kontrolü
+    bool playerGotShot = false;
+    
+    bool levelComplete = false;
+    int levelCompleteTimer = 0;
+
+    // Kaçıncı seviyede olduğumuzu tutar
+    int level = 1;
+
+    // Oyuncu vurulduktan sonra geçen süreyi sayacağız
+    int gameOverTimer = 0;
 
     // =========================
     // FONT VE SKOR YAZISI
@@ -67,6 +90,23 @@ int main()
     // Yazı pozisyonu
     scoreText.setPosition(620.f, 15.f);
 
+    // Oyuncu vurulunca ekranda gösterilecek yazı
+    sf::Text hitText;
+    hitText.setFont(font);
+    hitText.setString("You Got Shot");
+    hitText.setCharacterSize(40);
+    hitText.setFillColor(sf::Color::Red);
+    hitText.setPosition(270.f, 280.f);
+
+    // Seviye tamamlanınca ekranda gösterilecek yazı
+    sf::Text levelCompleteText;
+    levelCompleteText.setFont(font);
+    levelCompleteText.setString("LEVEL " + std::to_string(level) + " COMPLETE");
+    levelCompleteText.setCharacterSize(40);
+    levelCompleteText.setFillColor(sf::Color::Green);
+    levelCompleteText.setPosition(180.f, 280.f);
+
+
     // =========================
     // DÜŞMANLAR
     // =========================
@@ -87,6 +127,9 @@ int main()
     // Dalga hareketi için zaman değişkeni
     // Bu değer oyun çalıştıkça artacak ve sinüs hareketini oluşturacak
     float waveTime = 0.f;
+
+    // Düşmanların belli aralıklarla ateş etmesi için sayaç
+    int enemyShootTimer = 0;
 
     // 5 tane düşman oluşturacağız
     for (int i = 0; i < 5; i++)
@@ -147,7 +190,7 @@ int main()
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
         {
             // Oyuncu ekranın sağından çıkmasın
-            if (player.getPosition().x < 720)
+            if (player.getPosition().x < 735)
             {
                 player.move(0.5f, 0.f);
             }
@@ -209,6 +252,46 @@ int main()
 
 
         // =========================
+        // DÜŞMAN MERMİ HAREKETİ
+        // =========================
+
+        for (int i = 0; i < enemyBullets.size(); i++)
+        {
+            // Düşman mermileri aşağı doğru gider
+            enemyBullets[i].move(0.f, 0.3f);
+
+            // Ekranın altından çıkan düşman mermisini sil
+            if (enemyBullets[i].getPosition().y > 600)
+            {
+                enemyBullets.erase(enemyBullets.begin() + i);
+            }
+        }
+
+        // =========================
+        // DÜŞMAN MERMİSİ - OYUNCU ÇARPIŞMASI
+        // =========================
+
+        for (int i = 0; i < enemyBullets.size(); i++)
+        {
+            // Düşman mermisi oyuncuya değdi mi?
+            if (enemyBullets[i].getGlobalBounds().intersects(player.getGlobalBounds()))
+            {
+                // Eğer oyuncu ilk kez vurulduysa
+                if (!playerGotShot)
+                {
+                    playerGotShot = true;
+
+                    // Sayaç sadece ilk vurulmada sıfırlanır
+                    gameOverTimer = 0;
+                }
+
+                enemyBullets.erase(enemyBullets.begin() + i);
+            }
+        }
+
+
+
+        // =========================
         // ÇARPIŞMA KONTROLÜ
         // =========================
 
@@ -221,6 +304,11 @@ int main()
                 {
                     // Düşmanı sil
                     enemies.erase(enemies.begin() + j);
+
+                    // Düşmanın başlangıç Y bilgisini de siliyoruz
+                    enemyBaseY.erase(enemyBaseY.begin() + j);
+
+                    
 
                     // Skoru artır
                     score += 10;
@@ -236,6 +324,49 @@ int main()
         // Dalga hareketi için zamanı artırıyoruz
         // Bu değer arttıkça std::sin() farklı sonuçlar üretir
         waveTime += 0.005f;
+
+
+        // =========================
+        // DÜŞMAN ATEŞ ETME
+        // =========================
+
+        // Sayaç her frame artar
+        enemyShootTimer++;
+
+        // Düşmanların ateş etme sıklığını seviyeye göre ayarlıyoruz
+        int enemyShootLimit = 900;
+
+        // Eğer 2. seviyeye geçildiyse düşmanlar daha sık ateş etsin
+        if (level == 2)
+        {
+            enemyShootLimit = 300;
+        }
+
+        // Eğer sayaç belirli bir değere ulaştıysa ve hala düşman varsa
+        if (enemyShootTimer >= enemyShootLimit && enemies.size() > 0)
+        {
+            // Rastgele bir düşman seçiyoruz
+            int randomEnemyIndex = rand() % enemies.size();
+
+            // Seçilen düşmandan mermi oluşturuyoruz
+            sf::RectangleShape enemyBullet(sf::Vector2f(5.f, 20.f));
+
+            // Düşman mermisinin rengi sarı
+            enemyBullet.setFillColor(sf::Color::Yellow);
+
+            // Mermiyi seçilen düşmanın alt orta kısmından başlatıyoruz
+            enemyBullet.setPosition(
+                enemies[randomEnemyIndex].getPosition().x + 18.f,
+                enemies[randomEnemyIndex].getPosition().y + 22.f
+            );
+
+            // Mermiyi vector içine ekliyoruz
+            enemyBullets.push_back(enemyBullet);
+
+            // Sayacı sıfırlıyoruz
+            enemyShootTimer = 0;
+        }
+
 
         // =========================
         // DÜŞMAN HAREKETİ
@@ -269,28 +400,147 @@ int main()
             );
         }
 
+        // =========================
+        // DÜŞMAN BOŞLUK KAPATMA
+        // =========================
 
+        // Seviyeye göre düşmanlar arası olması gereken mesafe
+        float enemySpacing = 120.f;
+
+        if (level == 2)
+        {
+            enemySpacing = 100.f;
+        }
+
+        // Düşmanlar arasında boşluk oluştuysa bunu yavaşça kapatıyoruz
+        for (int i = 1; i < enemies.size(); i++)
+        {
+            // Bir önceki düşmana göre olması gereken X konumu
+            float targetX = enemies[i - 1].getPosition().x + enemySpacing;
+
+            // Eğer arada normalden fazla boşluk varsa sağdaki düşman sola doğru yaklaşır
+            if (enemies[i].getPosition().x > targetX)
+            {
+                enemies[i].move(-0.1f, 0.f);
+            }
+        }
+
+        // =========================
+        // KENAR KONTROLÜ
+        // =========================
+
+        // Düşmanlar arasında hâlâ boşluk var mı?
+        bool hasGap = false;
+
+        for (int i = 1; i < enemies.size(); i++)
+        {
+            if (enemies[i].getPosition().x - enemies[i - 1].getPosition().x > enemySpacing + 5.f)
+            {
+                hasGap = true;
+            }
+        }
 
         // Kenara değdiler mi kontrolü
         for (int i = 0; i < enemies.size(); i++)
         {
-            // Sağ kenar
-            if (enemies[i].getPosition().x > 750)
+            // Sağ kenara gelindiyse ama arada boşluk varsa hemen yön değiştirme
+            if (enemies[i].getPosition().x > 750 && !hasGap)
             {
                 moveRight = false;
             }
 
-            // Sol kenar
-            if (enemies[i].getPosition().x < 0)
+            // Sol kenara gelindiyse ama arada boşluk varsa hemen yön değiştirme
+            if (enemies[i].getPosition().x < 0 && !hasGap)
             {
                 moveRight = true;
             }
+        }
+
+        // Eğer hiç düşman kalmadıysa ve seviye daha önce tamamlanmadıysa
+        if (enemies.size() == 0 && !levelComplete)
+        {
+            // Seviyeyi tamamlandı olarak işaretliyoruz
+            levelComplete = true;
+
+            // Sayaç sıfırlanıyor
+            levelCompleteTimer = 0;
+        }
+
+        // Seviye tamamlandıysa süre saymaya başla
+        if (levelComplete)
+        {
+            levelCompleteTimer++;
+        }
+
+        // Seviye tamamlandıktan yaklaşık 3 saniye sonra yeni seviyeye geç
+        if (levelComplete && levelCompleteTimer > 3900)
+        {
+            // Seviyeyi 1 artırıyoruz
+            level++;
+
+            // Level complete durumunu kapatıyoruz
+            levelComplete = false;
+
+            // Sayaç sıfırlanıyor
+            levelCompleteTimer = 0;
+
+            // Eski mermileri temizliyoruz
+            bullets.clear();
+            enemyBullets.clear();
+
+            // Düşmanları ve başlangıç Y bilgilerini temizliyoruz
+            enemies.clear();
+            enemyBaseY.clear();
+
+            // Yeni seviyede daha fazla düşman oluşturuyoruz
+            for (int i = 0; i < 7; i++)
+            {
+                sf::RectangleShape enemy(sf::Vector2f(40.f, 22.f));
+
+                enemy.setFillColor(sf::Color::Blue);
+
+                enemy.setPosition(60.f + i * 100.f, 80.f);
+
+                enemies.push_back(enemy);
+
+                enemyBaseY.push_back(80.f);
+            }
+
+            // Yeni level yazısını güncelliyoruz
+            levelCompleteText.setString("LEVEL " + std::to_string(level) + " COMPLETE");
+        }
+
+
+        // Eğer oyuncu vurulduysa süre saymaya başla
+        if (playerGotShot)
+        {
+            gameOverTimer++;
+        }
+
+        // Eğer oyuncu vurulduysa süre saymaya başla
+        if (playerGotShot)
+        {
+            gameOverTimer++;
+        }
+
+        // Yaklaşık 3 saniye sonra oyun döngüsünden çık
+        if (playerGotShot && gameOverTimer > 3900)
+        {
+			continue;// Eğer break olursa oyun bitince pencere kapanır, ama böyle oyun donup pencere açık kalır
         }
 
         // Skor yazısını güncelle
         scoreText.setString(
             "Score: " + std::to_string(score)
         );
+
+        // Yaklaşık 3 saniye sonra oyunu durdur
+		// Oyun 1300 fps e limitli old için 3900 sayısı yaklaşık 3 saniyeye denk gelir
+        if (playerGotShot && gameOverTimer > 3900)
+        {
+            break;
+        }
+
 
         // =========================
         // EKRANI ÇİZME
@@ -318,13 +568,21 @@ int main()
         // Yazıyı çiz
         window.draw(scoreText);
 
-
+        // Eğer oyuncu vurulduysa uyarı yazısını çiz
+        if (playerGotShot)
+        {
+            window.draw(hitText);
+        }
 
 
         // Oyuncuyu çiz
         window.draw(player);
 
-
+        // Seviye tamamlandıysa LEVEL COMPLETE yazısını çiz
+        if (levelComplete)
+        {
+            window.draw(levelCompleteText);
+        }
 
         
         // Tüm mermileri çiz
@@ -333,6 +591,11 @@ int main()
             window.draw(bullets[i]);
         }
 
+        // Tüm düşman mermilerini çiz
+        for (int i = 0; i < enemyBullets.size(); i++)
+        {
+            window.draw(enemyBullets[i]);
+        }
 
 
         // Tüm düşmanları tek tek çiz
