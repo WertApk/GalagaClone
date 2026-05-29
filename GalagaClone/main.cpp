@@ -67,7 +67,8 @@ int main()
         KEYS,
         GAMEPLAY_INFO,
         PLAYING,
-        GAME_OVER
+        GAME_OVER,
+        YOU_WIN
     };
 
     // Oyun ilk açıldığında menüden başlayacak
@@ -222,6 +223,22 @@ int main()
     gameOverText.setCharacterSize(35);
     gameOverText.setFillColor(sf::Color::White);
     gameOverText.setPosition(220.f, 200.f);
+
+    // =========================
+    // YOU WIN EKRANI
+    // =========================
+
+    sf::Text youWinText;
+    youWinText.setFont(font);
+    youWinText.setString(
+        "YOU WIN\n\n"
+        "Press R to Play Again\n"
+        "Press ESC for Menu"
+    );
+    youWinText.setCharacterSize(35);
+    youWinText.setFillColor(sf::Color::White);
+    youWinText.setPosition(200.f, 200.f);
+
 
     // =========================
     // DÜŞMANLAR
@@ -412,9 +429,49 @@ int main()
             {
                 if (!enterPressed)
                 {
-                    // PLAY seçiliyse oyunu başlat
                     if (selectedMenuItem == 0)
                     {
+                        // Yeni oyun başlatılırken temel değerleri sıfırlıyoruz
+                        score = 0;
+                        lives = 3;
+                        level = 1;
+
+                        playerGotShot = false;
+                        levelComplete = false;
+
+                        gameOverTimer = 0;
+                        levelCompleteTimer = 0;
+                        enemyShootTimer = 0;
+
+                        // Ekrandaki eski mermileri temizliyoruz
+                        bullets.clear();
+                        enemyBullets.clear();
+
+                        // Eski düşmanları temizliyoruz
+                        enemies.clear();
+                        enemyBaseY.clear();
+
+                        // Level 1 düşmanlarını yeniden oluşturuyoruz
+                        for (int i = 0; i < 5; i++)
+                        {
+                            sf::RectangleShape enemy(sf::Vector2f(40.f, 22.f));
+
+                            enemy.setFillColor(sf::Color::Blue);
+
+                            enemy.setPosition(120.f + i * 120.f, 80.f);
+
+                            enemies.push_back(enemy);
+
+                            enemyBaseY.push_back(80.f);
+                        }
+
+                        // Oyuncuyu başlangıç konumuna taşıyoruz
+                        player.setPosition(360.f, 520.f);
+
+                        // Level complete yazısını tekrar Level 1'e göre ayarlıyoruz
+                        levelCompleteText.setString("LEVEL " + std::to_string(level) + " COMPLETE");
+
+                        // Oyunu başlatıyoruz
                         currentState = PLAYING;
                     }
 
@@ -478,6 +535,12 @@ int main()
             {
                 window.draw(gameOverText);
             }
+
+            if (currentState == YOU_WIN)
+            {
+                window.draw(youWinText);
+            }
+
 
             window.display();
             continue;
@@ -656,6 +719,12 @@ int main()
             enemyShootLimit = 300;
         }
 
+        // Eğer 3. seviyeye geçildiyse düşmanlar daha da sık ateş etsin
+        if (level == 3)
+        {
+            enemyShootLimit = 220;
+        }
+
         // Eğer sayaç belirli bir değere ulaştıysa ve hala düşman varsa
         if (enemyShootTimer >= enemyShootLimit && enemies.size() > 0)
         {
@@ -726,6 +795,11 @@ int main()
             enemySpacing = 100.f;
         }
 
+        if (level == 3)
+        {
+            enemySpacing = 80.f;
+        }
+
         // Düşmanlar arasında boşluk oluştuysa bunu yavaşça kapatıyoruz
         for (int i = 1; i < enemies.size(); i++)
         {
@@ -788,41 +862,70 @@ int main()
 
         // Seviye tamamlandıktan yaklaşık 3 saniye sonra yeni seviyeye geç
         if (levelComplete && levelCompleteTimer > 3900)
-        {
-            // Seviyeyi 1 artırıyoruz
-            level++;
-
-            // Level complete durumunu kapatıyoruz
-            levelComplete = false;
-
-            // Sayaç sıfırlanıyor
-            levelCompleteTimer = 0;
-
-            // Eski mermileri temizliyoruz
-            bullets.clear();
-            enemyBullets.clear();
-
-            // Düşmanları ve başlangıç Y bilgilerini temizliyoruz
-            enemies.clear();
-            enemyBaseY.clear();
-
-            // Yeni seviyede daha fazla düşman oluşturuyoruz
-            for (int i = 0; i < 7; i++)
+            // Seviye tamamlandıktan yaklaşık 3 saniye sonra yeni seviyeye geç
+            if (levelComplete && levelCompleteTimer > 3900)
             {
-                sf::RectangleShape enemy(sf::Vector2f(40.f, 22.f));
+                // Eğer 3. seviye bittiyse oyuncu oyunu kazandı
+                if (level == 3)
+                {
+                    currentState = YOU_WIN;
+                }
+                else
+                {
+                    // Seviyeyi 1 artırıyoruz
+                    level++;
 
-                enemy.setFillColor(sf::Color::Blue);
+                    // Level complete durumunu kapatıyoruz
+                    levelComplete = false;
 
-                enemy.setPosition(60.f + i * 100.f, 80.f);
+                    // Sayaç sıfırlanıyor
+                    levelCompleteTimer = 0;
 
-                enemies.push_back(enemy);
+                    // Eski mermileri temizliyoruz
+                    bullets.clear();
+                    enemyBullets.clear();
 
-                enemyBaseY.push_back(80.f);
+                    // Düşmanları ve başlangıç Y bilgilerini temizliyoruz
+                    enemies.clear();
+                    enemyBaseY.clear();
+
+                    // Yeni seviyedeki düşman sayısı ve aralık değişkenleri
+                    int enemyCount = 5;
+                    float startX = 120.f;
+                    float spacing = 120.f;
+
+                    if (level == 2)
+                    {
+                        enemyCount = 7;
+                        startX = 60.f;
+                        spacing = 100.f;
+                    }
+
+                    if (level == 3)
+                    {
+                        enemyCount = 9;
+                        startX = 40.f;
+                        spacing = 80.f;
+                    }
+
+                    // Yeni seviyenin düşmanlarını oluşturuyoruz
+                    for (int i = 0; i < enemyCount; i++)
+                    {
+                        sf::RectangleShape enemy(sf::Vector2f(40.f, 22.f));
+
+                        enemy.setFillColor(sf::Color::Blue);
+
+                        enemy.setPosition(startX + i * spacing, 80.f);
+
+                        enemies.push_back(enemy);
+
+                        enemyBaseY.push_back(80.f);
+                    }
+
+                    // Yeni level yazısını güncelliyoruz
+                    levelCompleteText.setString("LEVEL " + std::to_string(level) + " COMPLETE");
+                }
             }
-
-            // Yeni level yazısını güncelliyoruz
-            levelCompleteText.setString("LEVEL " + std::to_string(level) + " COMPLETE");
-        }
 
 
         // Eğer oyuncu vurulduysa süre saymaya başla
