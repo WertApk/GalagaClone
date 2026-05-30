@@ -313,7 +313,7 @@ int main()
         }
 
         // GAME OVER ekranında R ile yeniden başlat
-        if (currentState == GAME_OVER)
+        if (currentState == GAME_OVER || currentState == YOU_WIN)
         {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::R))
             {
@@ -369,6 +369,15 @@ int main()
 
         // GAME OVER ekranında ESC ile menüye dön
         if (currentState == GAME_OVER)
+        {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
+            {
+                currentState = MENU;
+            }
+        }
+
+        // YOU WIN ekranında ESC ile menüye dön
+        if (currentState == YOU_WIN)
         {
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
             {
