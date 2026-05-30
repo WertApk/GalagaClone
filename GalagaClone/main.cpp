@@ -213,11 +213,14 @@ int main()
     // GAME OVER EKRANI
     // =========================
 
+    // Game Over ekranında gösterilecek yazı
     sf::Text gameOverText;
     gameOverText.setFont(font);
+
     gameOverText.setString(
         "GAME OVER\n\n"
-        "Press R to Retry\n"
+        "Final Score: " + std::to_string(score) +
+        "\n\nPress R to Retry\n"
         "Press ESC for Menu"
     );
     gameOverText.setCharacterSize(35);
@@ -946,6 +949,13 @@ int main()
         // Yaklaşık 3 saniye sonra Game Over ekranına geç
         if (playerGotShot && gameOverTimer > 3900)
         {
+            gameOverText.setString(
+                "GAME OVER\n\n"
+                "Final Score: " + std::to_string(score) +
+                "\n\nPress R to Retry\n"
+                "Press ESC for Menu"
+            );
+
             currentState = GAME_OVER;
         }
 
